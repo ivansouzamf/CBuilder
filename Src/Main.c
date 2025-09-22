@@ -54,8 +54,11 @@ size_t GetThreadCount();
 #define SEC_MAIN "Program"
 #if defined(__linux__)
 	#define SEC_OS "Program.Linux"
+	#include <alloca.h>
+	#define ALLOCA(size) alloca(size)
 #elif defined(_WIN32)
 	#define SEC_OS "Program.Win32"
+	#define ALLOCA(size) _alloca(size)
 #endif
 #define PROP_MAIN_SRCS "sources "
 #define PROP_MAIN_OUT "output "
@@ -65,12 +68,13 @@ size_t GetThreadCount();
 #define PROP_OS_LFLAGS "linkFlags "
 
 #if defined(__linux__)
-	#define COMP_FLAGS ""
-	#define COMP_OUT "-o"
+	#define COMP_FLAGS "-c"
+	#define COMP_OUT "-o "
 	#define COMP_EXE_EXT ""
 	#define COMP_DLL_EXT ".so"
 	#define COMP_OBJ_SEARCH "%s/*.o"
-	#define COMP_LINK "ld"
+	// That's hacky but it works
+	#define COMP_LINK compiler
 #elif defined(_WIN32)
 	#define COMP_FLAGS "/c"
 	#define COMP_OUT "/OUT:"
@@ -113,7 +117,7 @@ int main(int argc, char* argv[])
 		return 0;
 	} else {
 		if (!IsFileValid(arg)) {
-			fprintf(stderr, "Invalid path!");
+			fprintf(stderr, "Invalid path!\n");
 			return -1;
 		}
 
@@ -132,7 +136,7 @@ int main(int argc, char* argv[])
 		int mainSec = ini_find_section(config, SEC_MAIN, 0);
 		int osSec = ini_find_section(config, SEC_OS, 0);
 		if (!CHECK_INI(mainSec) || !CHECK_INI(osSec)) {
-			fprintf(stderr, "Invalid build config!");
+			fprintf(stderr, "Invalid build config!\n");
 			return -1;
 		}
 
@@ -149,11 +153,12 @@ int main(int argc, char* argv[])
 		Str_List sourcesSplitted = SplitStringList(sources);
 		Str_List sysLibsSplitted = SplitStringList(sysLibs);
 
+		size_t thrdCount = GetThreadCount();
+
 		for (size_t i = 0; i < sourcesSplitted.size; i += 1) {
-			size_t thrdCount = GetThreadCount();
 			Str_List sourceFiles = ParseFileList(sourcesSplitted.data[i]);
 			for (size_t j = 0; j < sourceFiles.size; j += thrdCount) {
-				Process_Data* processes = _alloca(sizeof(Process_Data) * thrdCount);
+				Process_Data* processes = ALLOCA(sizeof(Process_Data) * thrdCount);
 				for (size_t k = 0; (k < thrdCount) && (k + j < sourceFiles.size); k += 1) {
 					size_t srcIdx = j + k;
 
@@ -161,7 +166,7 @@ int main(int argc, char* argv[])
 					size_t cmdLen = 1 + snprintf(NULL, 0, cmdFmt, compiler, COMP_FLAGS, compFlags, sourceFiles.data[srcIdx]);
 					char* cmd = (char*) malloc(cmdLen);
 					snprintf(cmd, cmdLen, cmdFmt, compiler, COMP_FLAGS, compFlags, sourceFiles.data[srcIdx]);
-					
+
 					bool ok = SpawnAsyncProcess(cmd, outputDir, &processes[k]);
 					if (!ok) {
 						fprintf(stderr, "Error trying to compile file '%s'\n", sourceFiles.data[srcIdx]);
@@ -170,12 +175,12 @@ int main(int argc, char* argv[])
 
 					free(cmd);
 				}
-				
+
 				// TODO: Maybe we should destroy process data as well
 				WaitForMultipleProcesses(processes, thrdCount);
-				Sleep(1000 * 5); // HACK: Should be removed when 'WaitForMultipleProcesses()' got fixed
+				//Sleep(1000 * 5); // HACK: Should be removed when 'WaitForMultipleProcesses()' got fixed
 			}
-	
+
 			DestroyStrList(&sourceFiles);
 		}
 
@@ -184,13 +189,13 @@ int main(int argc, char* argv[])
 			size_t objPathLen = 1 + snprintf(NULL, 0, COMP_OBJ_SEARCH, outputDir);
 			char* objPath = (char*) malloc(objPathLen);
 			snprintf(objPath, objPathLen, COMP_OBJ_SEARCH, outputDir);
-			
+
 			Str_List objFiles = ParseFileList(objPath);
-			
+
 			size_t objFilesStrLen = 0;
 			for (size_t i = 0; i < objFiles.size; i += 1)
 				objFilesStrLen += StrLen(objFiles.data[i]);
-			
+
 			char* objFilesStr = (char*) malloc(objFilesStrLen);
 			size_t objFilesStrOffset = 0;
 			for (size_t i = 0; i < objFiles.size; i += 1) {
@@ -198,26 +203,26 @@ int main(int argc, char* argv[])
 				MemCpy(&objFilesStr[objFilesStrOffset], objFiles.data[i], fileLen + 1);
 				if (i < objFiles.size - 1)
 					objFilesStr[objFilesStrOffset + fileLen] = ' ';
-				
+
 				objFilesStrOffset += fileLen + 1;
 			}
-			
+
 			char* libsStr = GetLibsStr(sysLibsSplitted);
-			
+
 			const char* cmdFmt = "%s %s %s%s%s %s %s";
 			size_t cmdLen = 1 + snprintf(NULL, 0, cmdFmt, COMP_LINK, linkFlags, COMP_OUT, outputFile, COMP_EXE_EXT, libsStr, objFilesStr);
 			char* cmd = (char*) malloc(cmdLen);
 			snprintf(cmd, cmdLen, cmdFmt, COMP_LINK, linkFlags, COMP_OUT, outputFile, COMP_EXE_EXT, libsStr, objFilesStr);
-			
+
 			Process_Data linkerProcess = {0};
 			bool ok = SpawnAsyncProcess(cmd, outputDir, &linkerProcess);
 			if (!ok) {
 				fprintf(stderr, "Error trying to link '%s%s'\n", outputFile, COMP_EXE_EXT);
 				return -1;
 			}
-			
+
 			WaitForMultipleProcesses(&linkerProcess, 1);
-			
+
 			//free(cmd);
 			//free(libsStr);
 			//free(objFilesStr);

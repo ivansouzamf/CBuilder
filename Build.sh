@@ -1,7 +1,7 @@
 program_name="CBuilder"
 build_dir="./.Build"
 
-sources="./src/Main.c"
+sources="./Src/Main.c"
 debug_opts="-O0 -g -DDEBUG"
 release_opts="-O2 -DRELEASE"
 comp_opts="-Wall -Wextra -std=c17 -march=x86-64-v3"
@@ -27,7 +27,7 @@ if [ ! -d "$build_dir" ]; then
 fi
 
 echo "--- Building $program_name ---"
-echo "[Build Flags]: $comp_opts $sources $link_opts"
-cc $comp_opts $sources $link_opts
+echo "$comp_opts $sources $link_opts"
+musl-gcc $comp_opts $sources $link_opts -o $build_dir/$program_name
 
 exit $?

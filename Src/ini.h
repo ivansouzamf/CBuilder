@@ -420,7 +420,7 @@ the length is determined automatically, but in this case `value` has to be zero-
         #include <string.h>
         #define INI_STRNICMP( s1, s2, cnt ) ( _strnicmp( s1, s2, cnt ) )
     #else
-        #include <string.h>
+        #include <strings.h>
         #define INI_STRNICMP( s1, s2, cnt ) ( strncasecmp( s1, s2, cnt ) )
     #endif
 #endif
@@ -742,7 +742,7 @@ int ini_find_section( ini_t const* ini, char const* name, int name_length )
             {
             char const* const other =
                 ini->sections[ i ].name_large ? ini->sections[ i ].name_large : ini->sections[ i ].name;
-            if( strlen( other ) == name_length && INI_STRNICMP( name, other, (size_t)name_length ) == 0 )
+            if( strlen( other ) == (size_t) name_length && INI_STRNICMP( name, other, (size_t)name_length ) == 0 )
                 return i;
             }
         }
@@ -766,7 +766,7 @@ int ini_find_property( ini_t const* ini, int section, char const* name, int name
                 {
                 char const* const other =
                     ini->properties[ i ].name_large ? ini->properties[ i ].name_large : ini->properties[ i ].name;
-                if( strlen( other ) == name_length && INI_STRNICMP( name, other, (size_t) name_length ) == 0 )
+                if( strlen( other ) == (size_t) name_length && INI_STRNICMP( name, other, (size_t) name_length ) == 0 )
                     return c;
                 ++c;
                 }

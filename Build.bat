@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 set program_name=CBuilder.exe
 set build_dir=.\.Build
 
-set sources=..\src\Main.c
+set sources=..\Src\Main.c
 set debug_opts=/Od /Zi /DDEBUG
 set release_opts=/O2 /GL /DRELEASE
 set libraries=libvcruntime.lib libcmt.lib libucrt.lib kernel32.lib shlwapi.lib
@@ -32,7 +32,7 @@ if not exist "%build_dir%" (
 
 pushd %build_dir%
     echo --- Building %program_name% ---
-    echo [Build Flags]: %comp_opts% %sources% %link_opts%
+    echo %comp_opts% %sources% %link_opts%
     cl.exe %comp_opts% %sources% %link_opts%
 popd
 

@@ -72,20 +72,17 @@ static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char
 Str_List ParseFileList(char* sources)
 {
 	Str_List fileList = {};
-
 	char* file = GetFilenameFromPath(sources);
-	bool recurse = false;
 
-	if (MemCmp(file, "**", 2)) {
-		recurse = true;
-	} else if (file[0] != '*') {
+	if (file[0] != '*') {
 		fileList.data = (char**) malloc(sizeof(char*) * 1);
 		fileList.data[0] = file;
 		fileList.size = 1;
 
-		free(file);
 		return fileList;
 	}
+
+	bool recurse = MemCmp(file, "**", 2);
 
 	char* dir = GetDirFromPath(sources);
 	char* dirAbs = (char*) malloc(MAX_PATH + 1);
@@ -111,18 +108,18 @@ char* GetLibsStr(Str_List libs)
 	size_t libsStrLen = 0;
 	for (size_t i = 0; i < libs.size; i += 1)
 		libsStrLen += StrLen(libs.data[i]);
-	
-	size_t libsStrOffset = 0;
+
 	char* libsStr = (char*) malloc(libsStrLen);
+	size_t libsStrOffset = 0;
 	for (size_t i = 0; i < libs.size; i += 1) {
 		size_t strLen = StrLen(libs.data[i]);
 		MemCpy(&libsStr[libsStrOffset], libs.data[i], strLen + 1);
 		if (i < libs.size - 1)
 			libsStr[libsStrOffset + strLen] = ' ';
-		
+
 		libsStrOffset += strLen + 1;
 	}
-	
+
 	return libsStr;
 }
 
@@ -145,10 +142,10 @@ bool SpawnAsyncProcess(char* cmd, char* workDir, Process_Data* process)
 		NULL, workDirAbs,
 		&process->startInfo, &process->processInfo
 	);
-	
+
 	// TODO: Idk if that's safe
 	free(workDirAbs);
-	
+
 	return res == TRUE;
 }
 
@@ -158,7 +155,7 @@ bool WaitForMultipleProcesses(Process_Data* processList, size_t processCount)
 	HANDLE* handles = _alloca(sizeof(HANDLE) * processCount);
 	for (size_t i = 0; i < processCount; i += 1)
 		handles[i] = processList[i].processInfo.hProcess;
-	
+
 	DWORD res = WaitForMultipleObjects(
 		(DWORD) processCount, handles,
 		TRUE, INFINITE
@@ -169,7 +166,7 @@ bool WaitForMultipleProcesses(Process_Data* processList, size_t processCount)
 
 size_t GetThreadCount()
 {
-	SYSTEM_INFO info = {};
+	SYSTEM_INFO info = {0};
 	GetSystemInfo(&info);
 
 	return (size_t) info.dwNumberOfProcessors;
