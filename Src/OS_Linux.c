@@ -28,6 +28,7 @@ bool IsDirValid(char* path)
 char* GetFilenameFromPath(char* path);
 char* GetDirFromPath(char* path);
 char* GetFileExtension(char* file);
+size_t FullLenStrList(Str_List list);
 
 static char* _PathJoin(char* path1, char* path2)
 {
@@ -43,7 +44,7 @@ static char* _PathJoin(char* path1, char* path2)
     return finalPath;
 }
 
-static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext)
+size_t IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext)
 {
     size_t entryIndex = startIndex;
     DIR* dir = opendir(path);
@@ -54,7 +55,7 @@ static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char
             // We want to skip the '.' and '..' directories
             if (recurse && !StrCmp(entry->d_name, ".") && !StrCmp(entry->d_name, "..")) {
                 char* subDir = _PathJoin(path, entry->d_name);
-                entryIndex = _IterateDir(entryIndex, recurse, fileList, subDir, ext);
+                entryIndex = IterateDir(entryIndex, recurse, fileList, subDir, ext);
                 free(subDir);
             }
 
@@ -87,46 +88,12 @@ static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char
     return entryIndex;
 }
 
-Str_List ParseFileList(char* sources)
-{
-    Str_List fileList = {};
-    char* file = GetFilenameFromPath(sources);
-
-    if (file[0] != '*') {
-		fileList.data = (char**) malloc(sizeof(char*) * 1);
-		fileList.data[0] = file;
-		fileList.size = 1;
-
-		return fileList;
-	}
-
-    bool recurse = MemCmp(file, "**", 2);
-
-    char* dir = GetDirFromPath(sources);
-   	char* ext = GetFileExtension(file);
-	fileList.size = _IterateDir(0, recurse, NULL, dir, ext);
-	if (fileList.size != 0) {
-		fileList.data = (char**) malloc(sizeof(char*) * fileList.size);
-		_IterateDir(0, recurse, fileList.data, dir, ext);
-	}
-
-	free(ext);
-    free(dir);
-    free(file);
-
-    return fileList;
-}
-
 char* GetLibsStr(Str_List libs)
 {
     const char* prefix = "-l";
     const size_t prefixLen = sizeof("-l") - 1;
 
-   	size_t libsStrLen = 1;
-	for (size_t i = 0; i < libs.size; i += 1)
-		libsStrLen += prefixLen + StrLen(libs.data[i]) + 1;
-
-	char* libsStr = (char*) malloc(libsStrLen);
+	char* libsStr = (char*) malloc(libs.size * (prefixLen + 1) + FullLenStrList(libs));
 	size_t libsStrOffset = 0;
 	for (size_t i = 0; i < libs.size; i += 1) {
 	    size_t strLen = StrLen(libs.data[i]);

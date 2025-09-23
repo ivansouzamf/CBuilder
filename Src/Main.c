@@ -23,7 +23,7 @@ typedef struct Str_List {
 
 bool IsFileValid(char* path);
 bool IsDirValid(char* dir);
-Str_List ParseFileList(char* sources);
+size_t IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext);
 char* GetLibsStr(Str_List libs);
 
 typedef struct Process_Data Process_Data;
@@ -90,6 +90,8 @@ char* GetFilenameFromPath(char* path);
 char* GetDirFromPath(char* path);
 char* GetFileExtension(char* file);
 Str_List SplitStringList(char* strList);
+Str_List ParseFileList(char* sources);
+size_t FullLenStrList(Str_List list);
 void DestroyStrList(Str_List* list);
 
 int main(int argc, char* argv[])
@@ -192,11 +194,7 @@ int main(int argc, char* argv[])
 
 			Str_List objFiles = ParseFileList(objPath);
 
-			size_t objFilesStrLen = 0;
-			for (size_t i = 0; i < objFiles.size; i += 1)
-				objFilesStrLen += StrLen(objFiles.data[i]);
-
-			char* objFilesStr = (char*) malloc(objFilesStrLen);
+			char* objFilesStr = (char*) malloc(FullLenStrList(objFiles));
 			size_t objFilesStrOffset = 0;
 			for (size_t i = 0; i < objFiles.size; i += 1) {
 				size_t fileLen = StrLen(objFiles.data[i]);
@@ -338,6 +336,45 @@ Str_List SplitStringList(char* strList)
 	}
 
 	return finalList;
+}
+
+Str_List ParseFileList(char* sources)
+{
+    Str_List fileList = {};
+    char* file = GetFilenameFromPath(sources);
+
+    if (file[0] != '*') {
+		fileList.data = (char**) malloc(sizeof(char*) * 1);
+		fileList.data[0] = file;
+		fileList.size = 1;
+
+		return fileList;
+	}
+
+    bool recurse = MemCmp(file, "**", 2);
+
+    char* dir = GetDirFromPath(sources);
+   	char* ext = GetFileExtension(file);
+	fileList.size = IterateDir(0, recurse, NULL, dir, ext);
+	if (fileList.size != 0) {
+		fileList.data = (char**) malloc(sizeof(char*) * fileList.size);
+		IterateDir(0, recurse, fileList.data, dir, ext);
+	}
+
+	free(ext);
+    free(dir);
+    free(file);
+
+    return fileList;
+}
+
+size_t FullLenStrList(Str_List list)
+{
+    size_t listLen = 0;
+        for (size_t i = 0; i < list.size; i += 1)
+            listLen += StrLen(list.data[i]);
+
+    return listLen;
 }
 
 void DestroyStrList(Str_List* list)

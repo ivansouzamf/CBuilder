@@ -28,7 +28,7 @@ char* GetFilenameFromPath(char* path);
 char* GetDirFromPath(char* path);
 char* GetFileExtension(char* file);
 
-static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext)
+size_t IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext)
 {
 	const char* idk = "*";
 	char* findPath = (char*) malloc(StrLen(path) + 2);
@@ -43,7 +43,7 @@ static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char
 			if (recurse && !StrCmp(fileData.cFileName, ".") && !StrCmp(fileData.cFileName, "..")) {
 				char* subDir = (char*) malloc(MAX_PATH + 1);
 				subDir = PathCombineA(subDir, path, fileData.cFileName);
-				entryIndex = _IterateDir(entryIndex, recurse, fileList, subDir, ext);
+				entryIndex = IterateDir(entryIndex, recurse, fileList, subDir, ext);
 				free(subDir);
 			}
 
@@ -67,40 +67,6 @@ static size_t _IterateDir(size_t startIndex, bool recurse, char** fileList, char
 	free(findPath);
 
 	return entryIndex;
-}
-
-Str_List ParseFileList(char* sources)
-{
-	Str_List fileList = {};
-	char* file = GetFilenameFromPath(sources);
-
-	if (file[0] != '*') {
-		fileList.data = (char**) malloc(sizeof(char*) * 1);
-		fileList.data[0] = file;
-		fileList.size = 1;
-
-		return fileList;
-	}
-
-	bool recurse = MemCmp(file, "**", 2);
-
-	char* dir = GetDirFromPath(sources);
-	char* dirAbs = (char*) malloc(MAX_PATH + 1);
-	GetFullPathNameA(dir, MAX_PATH, dirAbs, NULL);
-
-	char* ext = GetFileExtension(file);
-	fileList.size = _IterateDir(0, recurse, NULL, dirAbs, ext);
-	if (fileList.size != 0) {
-		fileList.data = (char**) malloc(sizeof(char*) * fileList.size);
-		_IterateDir(0, recurse, fileList.data, dirAbs, ext);
-	}
-
-	free(ext);
-	free(dirAbs);
-	free(dir);
-	free(file);
-
-	return fileList;
 }
 
 char* GetLibsStr(Str_List libs)
