@@ -27,6 +27,7 @@ bool IsDirValid(char* dir)
 char* GetFilenameFromPath(char* path);
 char* GetDirFromPath(char* path);
 char* GetFileExtension(char* file);
+size_t FullLenStrList(Str_List list);
 
 size_t IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, char* ext)
 {
@@ -71,11 +72,7 @@ size_t IterateDir(size_t startIndex, bool recurse, char** fileList, char* path, 
 
 char* GetLibsStr(Str_List libs)
 {
-	size_t libsStrLen = 0;
-	for (size_t i = 0; i < libs.size; i += 1)
-		libsStrLen += StrLen(libs.data[i]);
-
-	char* libsStr = (char*) malloc(libsStrLen);
+	char* libsStr = (char*) malloc(FullLenStrList(libs));
 	size_t libsStrOffset = 0;
 	for (size_t i = 0; i < libs.size; i += 1) {
 		size_t strLen = StrLen(libs.data[i]);
