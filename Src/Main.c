@@ -370,11 +370,11 @@ Str_List ParseFileList(char* sources)
 
 size_t FullLenStrList(Str_List list)
 {
-    size_t listLen = 0;
-        for (size_t i = 0; i < list.size; i += 1)
-            listLen += StrLen(list.data[i]);
+	size_t listLen = 0;
+	for (size_t i = 0; i < list.size; i += 1)
+		listLen += StrLen(list.data[i]);
 
-    return listLen;
+	return listLen;
 }
 
 void DestroyStrList(Str_List* list)
